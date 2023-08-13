@@ -56,7 +56,7 @@ It accepts a list of zones as its context and renders each zone as a row in the 
                 <td>{{ zone.created_on or 'N/A' }}</td>
                 <td>{{ zone.modified_on or 'N/A' }}</td>
                 <!-- This button links to the Cloudflare dashboard for the specific zone, allowing for further adjustments -->
-                <td><a href="https://dash.cloudflare.com/{{ account_id }}/zones/{{ zone.id }}" target="_blank" class="btn btn-primary">Adjust</a></td>
+                <td><a href="https://dash.cloudflare.com/{{ account_id }}/{{ zone.name }}" target="_blank" class="btn btn-primary">Adjust</a></td>
                 </tr>
             {% endfor %}
         </tbody>
