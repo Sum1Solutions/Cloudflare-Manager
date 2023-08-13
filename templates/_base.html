@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Title for the page, can be overridden by child templates -->
+    <title>{% block title %}Cloudflare Manager{% endblock %}</title>
+
+    <!-- External Styles: DataTables and Bootstrap -->
+    <!-- DataTables is a jQuery plugin that adds advanced interaction controls to HTML tables like pagination, sorting, and searching. -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+
+    <!-- Bootstrap is a front-end framework that provides tools for creating responsive and mobile-first websites. -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+    <!-- jQuery is a fast and concise JavaScript Library that simplifies HTML document traversing, event handling, and animating for rapid web development. -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- DataTables JavaScript library which provides the functionality for the advanced interaction controls. -->
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+    <!-- Internal Styles -->
+    <!-- main.css contains the custom styles for the application. Using Flask's url_for function, we can generate URLs to serve static files. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+
+<body>
+
+    <!-- Navbar for the application. This is common across all pages and provides navigation links. -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <a class="navbar-brand" href="/">Cloudflare Manager</a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">All URLs</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="reactivate">Reactivate URLs</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="pending">Pending URLs</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <!-- This is where the specific content for each page will be injected. The block allows child templates to replace this section with their content. -->
+    {% block content %}
+    {% endblock %}
+
+</body>
+
+</html>
