@@ -1,43 +1,22 @@
-# app.py
-
 from flask import Flask, render_template
 import requests
 import os
+import logging
+from flask_caching import Cache
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
+
+# Configure logging only when debug mode is enabled
+if app.debug:
+    logging.basicConfig(level=logging.INFO)
 
 # Load Cloudflare API credentials from environment variables
 CLOUDFLARE_EMAIL = os.getenv('CLOUDFLARE_EMAIL')
 CLOUDFLARE_KEY = os.getenv('CLOUDFLARE_KEY')
 CLOUDFLARE_ACCOUNT_ID = os.getenv('CLOUDFLARE_ACCOUNT_ID')
 
-
-@app.route('/')
-def index():
-    """
-    Endpoint to display all zones.
-    Renders the index page with a table listing all Cloudflare zones.
-    """
-    zones = get_all_zones()
-    return render_template('index.html', zones=zones, title="All Zones", account_id=CLOUDFLARE_ACCOUNT_ID)
-
-@app.route('/reactivate.html')
-def reactivate():
-    """
-    Endpoint to display paused zones and offer reactivation.
-    Renders the Reactivate page with a table listing paused Cloudflare zones.
-    """
-    paused_zones = get_paused_zones()
-    return render_template('reactivate.html', zones=paused_zones, title="Paused Zones", account_id=CLOUDFLARE_ACCOUNT_ID)
-
-@app.route('/pending.html')
-def pending():
-    """
-    Endpoint to display zones with a 'pending' status.
-    Renders the Pending page with a table listing Cloudflare zones that are pending.
-    """
-    pending_zones = get_zones_by_status('pending')
-    return render_template('pending.html', zones=pending_zones, title="Pending Zones", account_id=CLOUDFLARE_ACCOUNT_ID)
+# Initialize caching
+cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
 def get_all_zones():
     """
@@ -57,6 +36,7 @@ def get_zones_by_status(status):
     """
     return get_zones_with_params({'status': status, 'per_page': 50})
 
+@cache.cached(timeout=60)  # Cache for 60 seconds
 def get_zones_with_params(params):
     """
     Helper function to retrieve zones based on provided parameters.
@@ -69,7 +49,7 @@ def get_zones_with_params(params):
 
     all_zones = []
     page = 0
-    total_pages = 1  # Default to 1 for first iteration
+    total_pages = 1  # Default to 1 for the first iteration
 
     while page < total_pages:
         page += 1  # Increment page number
@@ -79,13 +59,43 @@ def get_zones_with_params(params):
         if response.status_code == 200:
             result = response.json()
             all_zones.extend(result.get('result', []))
-            
+
             # Update total_pages based on result_info from Cloudflare
             total_pages = result.get('result_info', {}).get('total_pages', 1)
         else:
-            print(f"Failed to fetch zones for page {page}. Reason: {response.text}")
+            # Log error messages only when debug mode is enabled
+            if app.debug:
+                logging.error(f"Failed to fetch zones for page {page}. Reason: {response.text}")
 
     return all_zones
+
+# Page Routes:
+@app.route('/')
+def index():
+    """
+    Endpoint to display all zones.
+    Renders the index page with a table listing all Cloudflare zones.
+    """
+    zones = get_all_zones()
+    return render_template('index.html', zones=zones, title="All Zones", account_id=CLOUDFLARE_ACCOUNT_ID)
+
+@app.route('/pending.html')
+def pending():
+    """
+    Endpoint to display zones with a 'pending' status.
+    Renders the Pending page with a table listing Cloudflare zones that are pending.
+    """
+    pending_zones = get_zones_by_status('pending')
+    return render_template('pending.html', zones=pending_zones, title="Pending Zones", account_id=CLOUDFLARE_ACCOUNT_ID)
+
+@app.route('/reactivate.html')
+def reactivate():
+    """
+    Endpoint to display paused zones and offer reactivation.
+    Renders the Reactivate page with a table listing paused Cloudflare zones.
+    """
+    paused_zones = get_paused_zones()
+    return render_template('reactivate.html', zones=paused_zones, title="Paused Zones", account_id=CLOUDFLARE_ACCOUNT_ID)
 
 if __name__ == '__main__':
     app.run(debug=True)
