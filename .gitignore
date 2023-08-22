@@ -5,4 +5,5 @@ cc.py
 ccj.py
 PROJECT_SUMMARY.txt
 PROJECT_SUMMARY.json
+cloudflare_manager.db
 __pycache__/
