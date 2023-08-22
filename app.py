@@ -145,6 +145,34 @@ def no_dnssec():
     zones = get_zones_without_dnssec()
     return render_template('no_dnssec.html', zones=zones, title="Zones Without DNSSEC", account_id=CLOUDFLARE_ACCOUNT_ID)
 
+@app.route('/view_db')
+def view_db():
+    """
+    Endpoint to view all tables in the database and their metadata.
+    
+    This function fetches the list of all tables in the SQLite database 
+    and for each table, retrieves its columns and their details. 
+    The data is then passed to the `view_db.html` template for rendering.
+    """
+    conn = sqlite3.connect('cloudflare_manager.db')
+    cursor = conn.cursor()
+    
+    # Fetch all table names in the database
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    table_names = [table[0] for table in cursor.fetchall()]
+    
+    tables = {}
+    for table_name in table_names:
+        # For each table, fetch details of its columns
+        cursor.execute(f"PRAGMA table_info({table_name});")
+        columns = [{"name": column[1], "type": column[2], "notnull": column[3], "default": column[4], "pk": column[5]} for column in cursor.fetchall()]
+        tables[table_name] = columns
+    
+    conn.close()
+    
+    return render_template('view_db.html', tables=tables)
+
+
 @app.route('/save_to_db', methods=['POST'])
 def save_to_db():
     """Save zones data to the database."""

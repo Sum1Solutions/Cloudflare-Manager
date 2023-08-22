@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<h2>Database Tables and Metadata</h2>
+{% for table_name, columns in tables.items() %}
+    <h3>{{ table_name }}</h3>
+    <table border="1">
+        <thead>
+            <tr>
+                <th><a href="#" class="sort" data-sort="name">Name</a></th>
+                <th><a href="#" class="sort" data-sort="type">Type</a></th>
+                <th><a href="#" class="sort" data-sort="notnull">NotNull</a></th>
+                <th><a href="#" class="sort" data-sort="default">Default Value</a></th>
+                <th><a href="#" class="sort" data-sort="pk">Primary Key</a></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for column in columns %}
+                <tr>
+                    <td>{{ column.name }}</td>
+                    <td>{{ column.type }}</td>
+                    <td>{{ column.notnull }}</td>
+                    <td>{{ column.default }}</td>
+                    <td>{{ column.pk }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endfor %}
+
+<script>
+    $(".sort").click(function(e) {
+        e.preventDefault();
+        let sortBy = $(this).data("sort");
+        let table = $(this).closest('table');
+        let rows = table.find('tbody tr').get();
+
+        rows.sort(function(a, b) {
+            let A = $(a).children('td').eq(sortBy).text().toUpperCase();
+            let B = $(b).children('td').eq(sortBy).text().toUpperCase();
+
+            if(A < B) {
+                return -1;
+            }
+            if(A > B) {
+                return 1;
+            }
+            return 0;
+        });
+
+        $.each(rows, function(index, row) {
+            table.children('tbody').append(row);
+        });
+    });
+</script>
+{% endblock %}
