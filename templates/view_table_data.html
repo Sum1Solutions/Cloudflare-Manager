@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Heading for the page -->
+<h2>Data for Table: {{ table_name }}</h2>
+
+<!-- Create a table to display data from the database table -->
+<table class="table" id="{{ table_name }}Table">
+    <thead>
+        <tr>
+            {% for column in columns %}
+                <th>{{ column.name }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in data %}
+            <tr>
+                {% for value in row %}
+                    <td>{{ value }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('view_db') }}" class="btn btn-secondary">Back to All Tables</a>
+{% endblock %}
+
+{% block scripts %}
+<!-- Include external scripts as needed -->
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+<!-- Initialize DataTable for the table in the database -->
+<script>
+    $(document).ready(function() {
+        $('#{{ table_name }}Table').DataTable({
+            "pageLength": 50 // Display 50 rows by default
+        });
+    });
+</script>
+{% endblock %}

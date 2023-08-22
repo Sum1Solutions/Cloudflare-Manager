@@ -3,6 +3,7 @@ import requests
 import os
 import logging
 import sqlite3
+import db_util
 
 # Initialize Flask app with custom template folder
 app = Flask(__name__, template_folder='templates')
@@ -16,42 +17,6 @@ CLOUDFLARE_EMAIL = os.getenv('CLOUDFLARE_EMAIL')
 CLOUDFLARE_KEY = os.getenv('CLOUDFLARE_KEY')
 CLOUDFLARE_ACCOUNT_ID = os.getenv('CLOUDFLARE_ACCOUNT_ID')
 
-def setup_database():
-    """Initialize the database and set up tables if they don't exist."""
-    conn = sqlite3.connect('cloudflare_manager.db')
-    cursor = conn.cursor()
-
-    # Create zones table if it doesn't exist
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS zones (
-            id TEXT PRIMARY KEY,
-            name TEXT,
-            status TEXT,
-            type TEXT,
-            plan_name TEXT,
-            name_servers TEXT,
-            original_name_servers TEXT,
-            created_on TEXT,
-            modified_on TEXT,
-            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            auth_code_from_directnic TEXT
-        )
-    ''')
-
-    # Create table to track the database version
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS db_version (
-            version INTEGER
-        )
-    ''')
-
-    # Check if there's a version in the db_version table; if not, insert version 1
-    cursor.execute('SELECT COUNT(*) FROM db_version')
-    if cursor.fetchone()[0] == 0:
-        cursor.execute('INSERT INTO db_version (version) VALUES (1)')
-
-    conn.commit()
-    conn.close()
 
 # Cloudflare API functions
 
@@ -151,8 +116,9 @@ def view_db():
     Endpoint to view all tables in the database and their metadata.
     
     This function fetches the list of all tables in the SQLite database 
-    and for each table, retrieves its columns and their details. 
-    The data is then passed to the `view_db.html` template for rendering.
+    and for each table, retrieves its columns, the total row count, and 
+    the last updated timestamp. The data is then passed to the 
+    `view_db.html` template for rendering.
     """
     conn = sqlite3.connect('cloudflare_manager.db')
     cursor = conn.cursor()
@@ -162,15 +128,49 @@ def view_db():
     table_names = [table[0] for table in cursor.fetchall()]
     
     tables = {}
+    tables_metadata = {}  # Dictionary to store metadata like row count and last updated timestamp
+    
     for table_name in table_names:
         # For each table, fetch details of its columns
         cursor.execute(f"PRAGMA table_info({table_name});")
         columns = [{"name": column[1], "type": column[2], "notnull": column[3], "default": column[4], "pk": column[5]} for column in cursor.fetchall()]
         tables[table_name] = columns
+        
+        # Fetch row count for each table
+        cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+        row_count = cursor.fetchone()[0]
+        
+        # Fetch the last updated timestamp for each table (assuming there's a 'last_updated' column)
+        cursor.execute(f"SELECT MAX(last_updated) FROM {table_name}")
+        last_updated = cursor.fetchone()[0]
+        
+        # Store the metadata
+        tables_metadata[table_name] = {
+            'row_count': row_count,
+            'last_updated': last_updated
+        }
     
     conn.close()
     
-    return render_template('view_db.html', tables=tables)
+    return render_template('view_db.html', tables=tables, tables_metadata=tables_metadata)
+
+@app.route('/view_table_data/<table_name>')
+def view_table_data(table_name):
+    """Endpoint to view data for a specific table in the database."""
+    conn = sqlite3.connect('cloudflare_manager.db')
+    cursor = conn.cursor()
+    
+    # Fetch the column names for the table
+    cursor.execute(f"PRAGMA table_info({table_name});")
+    columns = [{"name": column[1]} for column in cursor.fetchall()]
+    
+    # Fetch the data for the table
+    cursor.execute(f"SELECT * FROM {table_name}")
+    data = cursor.fetchall()
+    
+    conn.close()
+    
+    return render_template('view_table_data.html', data=data, table_name=table_name, columns=columns)
 
 
 @app.route('/save_to_db', methods=['POST'])
@@ -219,5 +219,5 @@ def save_to_db():
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    setup_database()  # Initialize the database and create tables if they don't exist
+    db_util.setup_database()  # Initialize the database and create tables if they don't exist
     app.run(debug=True)

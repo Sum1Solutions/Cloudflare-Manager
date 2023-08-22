@@ -1,58 +1,44 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
+<!-- Heading for the page -->
 <h2>Database Tables and Metadata</h2>
+
+<!-- Loop over each table and its columns to display metadata -->
 {% for table_name, columns in tables.items() %}
+    <!-- Display the table name as a subheading -->
     <h3>{{ table_name }}</h3>
-    <table border="1">
-        <thead>
-            <tr>
-                <th><a href="#" class="sort" data-sort="name">Name</a></th>
-                <th><a href="#" class="sort" data-sort="type">Type</a></th>
-                <th><a href="#" class="sort" data-sort="notnull">NotNull</a></th>
-                <th><a href="#" class="sort" data-sort="default">Default Value</a></th>
-                <th><a href="#" class="sort" data-sort="pk">Primary Key</a></th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for column in columns %}
-                <tr>
-                    <td>{{ column.name }}</td>
-                    <td>{{ column.type }}</td>
-                    <td>{{ column.notnull }}</td>
-                    <td>{{ column.default }}</td>
-                    <td>{{ column.pk }}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    
+    <!-- Display metadata for the table -->
+    <p>
+        <!-- Display the number of rows in the table -->
+        <strong>Number of Rows:</strong> {{ tables_metadata[table_name].row_count }}<br>
+        
+        <!-- Display the last updated timestamp for the table -->
+        <strong>Last Updated:</strong> {{ tables_metadata[table_name].last_updated }}
+    </p>
+    
+    <!-- Button to view the data for the specific table -->
+    <!-- This can be linked to a specific route in your Flask application that displays the data for the chosen table -->
+    <a href="{{ url_for('view_table_data', table_name=table_name) }}" class="btn btn-primary">View Data</a>
+    
+    <!-- You can continue to display other details or structure as needed -->
 {% endfor %}
+{% endblock %}
 
+{% block scripts %}
+<!-- Include external scripts as needed -->
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+<!-- Initialize DataTable for each table in the database -->
 <script>
-    $(".sort").click(function(e) {
-        e.preventDefault();
-        let sortBy = $(this).data("sort");
-        let table = $(this).closest('table');
-        let rows = table.find('tbody tr').get();
-
-        rows.sort(function(a, b) {
-            let A = $(a).children('td').eq(sortBy).text().toUpperCase();
-            let B = $(b).children('td').eq(sortBy).text().toUpperCase();
-
-            if(A < B) {
-                return -1;
-            }
-            if(A > B) {
-                return 1;
-            }
-            return 0;
-        });
-
-        $.each(rows, function(index, row) {
-            table.children('tbody').append(row);
-        });
+    $(document).ready(function() {
+        {% for table_name in tables.keys() %}
+            // Ensure your table's ID in HTML matches the format '{{table_name}}Table'
+            $('#{{table_name}}Table').DataTable({
+                "pageLength": 50 // Display 50 rows by default
+            });
+        {% endfor %}
     });
 </script>
 {% endblock %}
